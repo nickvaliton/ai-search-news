@@ -104,26 +104,37 @@ def generate_newsletter(articles):
     today = datetime.utcnow().strftime("%B %d, %Y")
 
     prompt = f"""You are an expert SEO and AI search analyst writing a weekly newsletter for Nick Valiton,
-Associate Director of SEO at Synapse SEM in Boston.
+Associate Director of SEO at Synapse SEM in Boston. Nick manages SEO strategy for a portfolio of clients
+across various industries and needs to stay ahead of how AI search changes are affecting organic visibility,
+click-through rates, and search strategy.
 
 Today is {today}. Here are this week's news articles about AI search trends:
 
 {article_text}
 
-Write a professional, engaging weekly newsletter called "AI Search Weekly" with the following structure:
+Write a professional, actionable weekly newsletter called "AI Search Weekly" with the following structure:
 
-1. A short intro (2-3 sentences) summarizing the week's biggest theme
-2. "This Week's Top Stories" — 4-6 bullet points, each with a bold headline and 1-2 sentence summary. Include the source name.
-3. "What This Means for SEO" — 2-3 practical takeaways for SEO professionals
-4. A closing line signing off as "AI Search Weekly"
+1. A short intro (2-3 sentences) summarizing the week's most important theme for SEO professionals.
 
-Format it cleanly for an HTML email. Use <h2>, <h3>, <p>, <ul>, <li>, and <strong> tags.
+2. "This Week's Top Stories" — 4-6 stories, each formatted as:
+   - A bold, linked headline using the article's URL: <a href="URL"><strong>Headline</strong></a>
+   - Source name and date in muted text
+   - 1-2 sentences on what happened
+   - A "Why it matters for SEO:" line explaining the direct implication for client SEO strategy
+     (e.g. impact on organic CTR, content strategy, SERP visibility, crawling/indexing, etc.)
+
+3. "Key Takeaways for Your Clients This Week" — 3 concise, actionable bullets an SEO strategist
+   can act on or bring to a client meeting. Be specific — not generic advice.
+
+4. A one-line sign-off from "AI Search Weekly"
+
+Format cleanly for an HTML email. Use <h2>, <h3>, <p>, <ul>, <li>, <strong>, and <a> tags.
 Do not include <html>, <head>, or <body> tags — just the inner content.
-Keep the tone sharp, professional, and useful for a senior SEO practitioner."""
+Tone: sharp, direct, and built for a senior SEO practitioner who values brevity and strategy over hype."""
 
     message = client.messages.create(
         model="claude-opus-4-5",
-        max_tokens=1500,
+        max_tokens=2000,
         messages=[{"role": "user", "content": prompt}],
     )
 
