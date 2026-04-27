@@ -1,17 +1,21 @@
 import os
-import requests
+import smtplib
+import xml.etree.ElementTree as ET
+from datetime import datetime, timezone, timedelta
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+
 import anthropic
-from datetime import datetime, timedelta
-from sendgrid import SendGridAPIClient
-from sendgrid.helpers.mail import Mail
+import requests
 
 # --- Config ---
 NEWSAPI_KEY = os.environ["NEWSAPI_KEY"]
-SENDGRID_API_KEY = os.environ["SENDGRID_API_KEY"]
 ANTHROPIC_API_KEY = os.environ["ANTHROPIC_API_KEY"]
+GMAIL_ADDRESS = os.environ["GMAIL_ADDRESS"]
+GMAIL_APP_PASSWORD = os.environ["GMAIL_APP_PASSWORD"]
 
 RECIPIENT_EMAIL = "nick.valiton@synapsesem.com"
-SENDER_EMAIL = "nickvaliton@gmail.com"  # Must match your verified SendGrid sender
+SENDER_EMAIL = GMAIL_ADDRESS  # Gmail SMTP requires sender to match authenticated account
 
 KEYWORDS = [
     "AI search",
@@ -28,7 +32,7 @@ KEYWORDS = [
 def fetch_newsapi_articles():
     """Fetch articles from NewsAPI for each keyword."""
     articles = []
-    from_date = (datetime.utcnow() - timedelta(days=7)).strftime("%Y-%m-%d")
+    from_date = (datetime.now(timezone.utc) - timedelta(days=7)).strftime("%Y-%m-%d")
 
     for keyword in KEYWORDS:
         url = "https://newsapi.org/v2/everything"
@@ -58,8 +62,6 @@ def fetch_newsapi_articles():
 
 def fetch_google_news_rss():
     """Fetch articles from Google News RSS for AI search topics."""
-    import xml.etree.ElementTree as ET
-
     queries = ["AI+search+trends", "AI+search+engine", "Google+AI+Overviews+SEO"]
     articles = []
 
@@ -101,7 +103,7 @@ def generate_newsletter(articles):
     client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
 
     article_text = format_articles_for_prompt(articles)
-    today = datetime.utcnow().strftime("%B %d, %Y")
+    today = datetime.now(timezone.utc).strftime("%B %d, %Y")
 
     prompt = f"""You are an expert SEO and AI search analyst writing a weekly newsletter for Nick Valiton,
 Associate Director of SEO at Synapse SEM in Boston. Nick manages SEO strategy for a portfolio of clients
@@ -141,27 +143,22 @@ Tone: sharp, direct, and built for a senior SEO practitioner who values brevity 
     return message.content[0].text
 
 
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
-
 def send_email(newsletter_html):
-    gmail_address = os.environ["GMAIL_ADDRESS"]
-    gmail_password = os.environ["GMAIL_APP_PASSWORD"]
+    """Send the newsletter via Gmail SMTP using an app password."""
     today = datetime.now(timezone.utc).strftime("%B %d, %Y")
 
     message = MIMEMultipart("alternative")
     message["Subject"] = f"AI Search Weekly: {today}"
-    message["From"] = gmail_address
-    message["To"] = gmail_address  # sending to yourself; change if needed
+    message["From"] = SENDER_EMAIL
+    message["To"] = RECIPIENT_EMAIL
 
     message.attach(MIMEText(newsletter_html, "html"))
 
     with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
-        server.login(gmail_address, gmail_password)
+        server.login(GMAIL_ADDRESS, GMAIL_APP_PASSWORD)
         server.send_message(message)
 
-    print(f"Email sent to {gmail_address}")
+    print(f"Email sent from {SENDER_EMAIL} to {RECIPIENT_EMAIL}")
 
 
 def main():
