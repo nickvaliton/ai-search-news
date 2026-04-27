@@ -141,32 +141,27 @@ Tone: sharp, direct, and built for a senior SEO practitioner who values brevity 
     return message.content[0].text
 
 
-def send_email(html_content):
-    """Send the newsletter via SendGrid."""
-    today = datetime.utcnow().strftime("%B %d, %Y")
-    subject = f"AI Search Weekly — {today}"
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 
-    # Wrap in basic HTML shell
-    full_html = f"""
-    <html>
-    <body style="font-family: Georgia, serif; max-width: 640px; margin: 0 auto; padding: 24px; color: #1a1a1a; line-height: 1.6;">
-        {html_content}
-        <hr style="margin-top: 40px; border: none; border-top: 1px solid #ddd;">
-        <p style="font-size: 12px; color: #888;">You're receiving this because you set it up. Unsubscribe? Just delete the GitHub Action.</p>
-    </body>
-    </html>
-    """
+def send_email(newsletter_html):
+    gmail_address = os.environ["GMAIL_ADDRESS"]
+    gmail_password = os.environ["GMAIL_APP_PASSWORD"]
+    today = datetime.now(timezone.utc).strftime("%B %d, %Y")
 
-    message = Mail(
-        from_email=SENDER_EMAIL,
-        to_emails=RECIPIENT_EMAIL,
-        subject=subject,
-        html_content=full_html,
-    )
+    message = MIMEMultipart("alternative")
+    message["Subject"] = f"AI Search Weekly: {today}"
+    message["From"] = gmail_address
+    message["To"] = gmail_address  # sending to yourself; change if needed
 
-    sg = SendGridAPIClient(SENDGRID_API_KEY)
-    response = sg.send(message)
-    print(f"Email sent. Status code: {response.status_code}")
+    message.attach(MIMEText(newsletter_html, "html"))
+
+    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+        server.login(gmail_address, gmail_password)
+        server.send_message(message)
+
+    print(f"Email sent to {gmail_address}")
 
 
 def main():
